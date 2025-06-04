@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Windows.Forms;
 using Raylib_cs;
 using Color = Raylib_cs.Color;
@@ -8,6 +9,10 @@ namespace Editor;
 
 class Program
 {
+    const int WIDTH = 800;
+    const int HEIGHT = 600;
+
+    public static Camera2D camera = new(Vector2.Zero, new Vector2(WIDTH/2, HEIGHT/2), 0f,1f);
     static TextButton saveButton = new("Save", 0, 0, 100, 50, Color.White, Color.Blue, true);
     [STAThread]
     public static void Main()
@@ -19,7 +24,18 @@ class Program
         {
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Color.DarkGray);
+            Raylib.BeginMode2D(camera);
+            #region World Space Drawing
+
+
+
+            #endregion
+            Raylib.EndMode2D();
+            #region UI Drawing
+
             UIElement.UpdateAll();
+
+            #endregion
             Raylib.EndDrawing();
         }
         Raylib.CloseWindow();
