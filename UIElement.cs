@@ -15,9 +15,9 @@ public abstract class UIElement
     public bool drawRect;
     public bool rounded;
     
-    private bool isPressed = false;
-    private const float scrollCooldown = 0.05f;
-    private float lastScrollTime = -1000;
+    protected bool isPressed = false;
+    protected const float scrollCooldown = 0.01f;
+    protected float lastScrollTime = -1000;
 
     public event ClickEventHandler? MouseUp;
     public event ClickEventHandler? MouseDown;
@@ -40,7 +40,7 @@ public abstract class UIElement
             element.Update();
     }
 
-    private void Update()
+    protected virtual void Update()
     {
         Vector2 mousePos = Raylib.GetMousePosition();
         bool hovered = Raylib.CheckCollisionPointRec(mousePos, rect);
@@ -132,16 +132,33 @@ public class Label : UIElement
 }
 public class Button : UIElement
 {
+    bool highlightOnClick;
+    bool highlightOnScroll;
+    bool highlightedFromScroll = false;
     Color defaultColor;
     Color highlightedColor;
-    public Button(int x, int y, int width, int height, Color color, bool rounded)
+    public Button(int x, int y, int width, int height, Color color, bool rounded, bool highlightOnClick, bool highlightOnScroll)
         : base(x, y, width, height, color, rounded)
     {
         drawRect = true;
         defaultColor = color;
         highlightedColor = new Color(Math.Clamp(color.R + 20, 0, 255), Math.Clamp(color.G + 20, 0, 255), Math.Clamp(color.B + 20, 0, 255));
-        MouseDown += Highlight;
-        MouseUp += UnHighlight;
+        MouseDown += OnMouseDown;
+        MouseUp += OnMouseUp;
+        ScrollUp += Scroll;
+        ScrollDown += Scroll;
+        this.highlightOnClick = highlightOnClick;
+        this.highlightOnScroll = highlightOnScroll;
+    }
+    private void OnMouseDown(object? sender, ClickEventArgs e)
+    {
+        if (highlightOnClick)
+            Highlight(sender, e);
+    }
+    private void OnMouseUp(object? sender, ClickEventArgs e)
+    {
+        if (highlightOnClick)
+            UnHighlight(sender, e);
     }
     private void Highlight(object? sender, ClickEventArgs e)
     {
@@ -151,13 +168,30 @@ public class Button : UIElement
     {
         color = defaultColor;
     }
+    private void Scroll(object? sender, ClickEventArgs e)
+    {
+        if (highlightOnScroll)
+        {
+            Highlight(sender, e);
+            highlightedFromScroll = true;
+        }
+    }
+    protected override void Update()
+    {
+        base.Update();
+        if (Raylib.GetTime() > lastScrollTime + 5*scrollCooldown && highlightedFromScroll)
+        {
+            highlightedFromScroll = false;
+            UnHighlight(this, new(MouseButton.Middle));
+        }
+    }
 }
 public class TextButton : Button
 {
     public string text;
     public Color textColor;
-    public TextButton(string text, int x, int y, int width, int height, Color textColor, Color bgColor, bool rounded)
-        : base(x, y, width, height, bgColor, rounded)
+    public TextButton(string text, int x, int y, int width, int height, Color textColor, Color bgColor, bool rounded, bool highlightOnClick, bool highlightOnScroll)
+        : base(x, y, width, height, bgColor, rounded, highlightOnClick, highlightOnScroll)
     {
         this.text = text;
         this.textColor = textColor;
