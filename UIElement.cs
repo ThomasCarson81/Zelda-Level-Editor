@@ -2,19 +2,28 @@
 using System.Numerics;
 using Raylib_cs;
 
+using Color = Raylib_cs.Color;
+using Rectangle = Raylib_cs.Rectangle;
+
+namespace Editor;
+
 public abstract class UIElement
 {
-    private static List<UIElement> AllElements = new();
-    protected Rectangle rect;
-    protected Color color;
-    protected bool drawRect;
-    protected bool rounded;
+    private static readonly List<UIElement> AllElements = [];
+    public Rectangle rect;
+    public Color color;
+    public bool drawRect;
+    public bool rounded;
     
     private bool isPressed = false;
+    private const float scrollCooldown = 0.05f;
+    private float lastScrollTime = -1000;
 
     public event ClickEventHandler? MouseUp;
     public event ClickEventHandler? MouseDown;
     public event ClickEventHandler? Click;
+    public event ClickEventHandler? ScrollUp;
+    public event ClickEventHandler? ScrollDown;
 
     public UIElement(int x, int y, int width, int height, Color color, bool rounded)
     {
@@ -62,6 +71,25 @@ public abstract class UIElement
                     isPressed = false;
                 }
             }
+            if (Raylib.GetMouseWheelMoveV() != Vector2.Zero)
+            {
+                if (hovered)
+                {
+                    if (Raylib.GetTime() > lastScrollTime + scrollCooldown)
+                    {
+                        int scroll = (int)Raylib.GetMouseWheelMoveV().Y;
+                        if (scroll > 0)
+                        {
+                            ScrollUp?.Invoke(this, new ClickEventArgs(MouseButton.Middle));
+                        }
+                        else if (scroll < 0)
+                        {
+                            ScrollDown?.Invoke(this, new ClickEventArgs(MouseButton.Middle));
+                        }
+                        lastScrollTime = (float)Raylib.GetTime();
+                    }
+                }
+            }
         }
         Draw();
     }
@@ -77,19 +105,14 @@ public abstract class UIElement
     public delegate void ClickEventHandler(object sender, ClickEventArgs e);
 }
 
-public class ClickEventArgs : EventArgs
+public class ClickEventArgs(MouseButton button) : EventArgs
 {
-    public MouseButton Button { get; }
-
-    public ClickEventArgs(MouseButton button)
-    {
-        Button = button;
-    }
+    public MouseButton Button { get; } = button;
 }
 
 public class Label : UIElement
 {
-    string text;
+    public string text;
     public Label(string text, int x, int y, int width, int height, Color color)
         : base(x, y, width, height, color, false)
     {
@@ -109,16 +132,30 @@ public class Label : UIElement
 }
 public class Button : UIElement
 {
+    Color defaultColor;
+    Color highlightedColor;
     public Button(int x, int y, int width, int height, Color color, bool rounded)
         : base(x, y, width, height, color, rounded)
     {
         drawRect = true;
+        defaultColor = color;
+        highlightedColor = new Color(Math.Clamp(color.R + 20, 0, 255), Math.Clamp(color.G + 20, 0, 255), Math.Clamp(color.B + 20, 0, 255));
+        MouseDown += Highlight;
+        MouseUp += UnHighlight;
+    }
+    private void Highlight(object? sender, ClickEventArgs e)
+    {
+        color = highlightedColor;
+    }
+    private void UnHighlight(object? sender, ClickEventArgs e)
+    {
+        color = defaultColor;
     }
 }
 public class TextButton : Button
 {
-    string text;
-    Color textColor;
+    public string text;
+    public Color textColor;
     public TextButton(string text, int x, int y, int width, int height, Color textColor, Color bgColor, bool rounded)
         : base(x, y, width, height, bgColor, rounded)
     {
