@@ -12,12 +12,13 @@ class Program
     const int WIDTH = 800;
     const int HEIGHT = 600;
     const int MAX_TILE_ID = 255;
+    const int MIN_TILE_SIZE = 1;
     const int DEFAULT_MAP_WIDTH = 10;
     const int DEFAULT_MAP_HEIGHT = 10;
-    const int ZOOM_SCALE = 5;
+    const float ZOOM_SCALE = 0.2f;
 
     static int tileSize = 100;
-    byte[,] tiles = new byte[WIDTH, HEIGHT];
+    static Tile[,] tiles = new Tile[WIDTH, HEIGHT];
     static int currentMapWidth = DEFAULT_MAP_WIDTH;
     static int currentMapHeight = DEFAULT_MAP_HEIGHT;
     static int currentTileID = 0;
@@ -26,17 +27,17 @@ class Program
 
     public static Texture2D paintBrushTexture = Raylib.LoadTexture("brush50x50.png");
     public static Texture2D rectangleModeTexture = Raylib.LoadTexture("rectangleMode2.png");
-    public static Camera2D camera = new(Vector2.Zero, Vector2.Zero, 0f,1f);
+    public static Camera2D camera = new(Vector2.Zero, Vector2.Zero, 0f,0.5f);
     static TextButton saveButton = new("Save", 0, 0, 100, 50, Color.White, Color.Blue, true, true, false);
     static TextButton tileButton = new($"Tile ID: {currentTileID}", 105,0,150,50, Color.White, Color.Blue, true, false, true);
     static IconButton paintModeButton = new IconButton(260, 0, 50, 50, Color.Blue, true, true, false,paintBrushTexture);
 
-    
     [STAThread]
     public static void Main()
     {
         Raylib.InitWindow(800, 600, "Editor");
         Raylib.SetTargetFPS(60);
+        FillTiles();
         saveButton.Click += SaveClicked;
         tileButton.ScrollUp += IncrementTileID;
         tileButton.ScrollDown += DecrementTileID;
@@ -44,23 +45,8 @@ class Program
 
         while (!Raylib.WindowShouldClose())
         {
-
-            if (Raylib.IsMouseButtonPressed(MouseButton.Middle))
-            {
-                movingCamera = true;
-            }
-            if (Raylib.IsMouseButtonReleased(MouseButton.Middle))
-            {
-                movingCamera = false;
-            }
-            if (movingCamera)
-            {
-                camera.Target -= Raylib.GetMouseDelta();
-            }
-            if (Raylib.IsKeyDown(KeyboardKey.LeftControl) && Raylib.GetMouseWheelMoveV().Y != 0)
-            {
-                tileSize += ZOOM_SCALE * (int)Raylib.GetMouseWheelMoveV().Y;
-            }
+            PanCamera();
+            ZoomCamera();
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Color.DarkGray);
             Raylib.BeginMode2D(camera);
@@ -124,8 +110,58 @@ class Program
         {
             for (int j = 0; j < currentMapHeight; j++)
             {
-                Raylib.DrawRectangleLines(i * tileSize, j * tileSize, tileSize, tileSize, Color.Black);
+                Rectangle rect = tiles[i, j].rect;
+                Raylib.DrawRectangleLines((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height, Color.Black);
+                //Raylib.DrawRectangleLines(i * tileSize, j * tileSize, tileSize, tileSize, Color.Black);
             }
         }
     }
+    public static void ZoomCamera()
+    {
+        if (!Raylib.IsKeyDown(KeyboardKey.LeftControl) || Raylib.GetMouseWheelMoveV().Y == 0)
+            return;
+        Vector2 mouseWorldPos = Raylib.GetScreenToWorld2D(Raylib.GetMousePosition(), camera);
+
+        // Set the offset to where the mouse is
+        camera.Offset = Raylib.GetMousePosition();
+
+        // Set the target to match, so that the camera maps the world space point 
+        // under the cursor to the screen space point under the cursor at any zoom
+        camera.Target = mouseWorldPos;
+
+        // Zoom increment
+        // Uses log scaling to provide consistent zoom speed
+        float scale = ZOOM_SCALE * Raylib.GetMouseWheelMoveV().Y;
+        camera.Zoom = (float)Math.Clamp(Math.Exp(Math.Log(camera.Zoom) + scale), 0.125f, 64.0f);
+    }
+    public static void FillTiles()
+    {
+        for (int i = 0; i < currentMapWidth; i++)
+        {
+            for (int j = 0; j < currentMapHeight; j++)
+            {
+                tiles[i, j] = new Tile(new Rectangle(i * tileSize, j * tileSize, tileSize, tileSize), 0);
+            }
+        }
+    }
+    public static void PanCamera()
+    {
+        if (Raylib.IsMouseButtonPressed(MouseButton.Middle))
+        {
+            movingCamera = true;
+        }
+        if (Raylib.IsMouseButtonReleased(MouseButton.Middle))
+        {
+            movingCamera = false;
+        }
+        if (movingCamera)
+        {
+            camera.Target -= Raylib.GetMouseDelta() / camera.Zoom;
+        }
+    }
+}
+public struct Tile(Rectangle rect, byte id)
+{
+    public Rectangle rect = rect;
+    public byte id = id;
 }
