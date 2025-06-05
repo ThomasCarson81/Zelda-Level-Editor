@@ -22,10 +22,14 @@ class Program
     static int currentMapHeight = DEFAULT_MAP_HEIGHT;
     static int currentTileID = 0;
     static bool movingCamera = false;
+    static bool isBrushMode = true;
 
+    public static Texture2D paintBrushTexture = Raylib.LoadTexture("brush50x50.png");
+    public static Texture2D rectangleModeTexture = Raylib.LoadTexture("rectangleMode2.png");
     public static Camera2D camera = new(Vector2.Zero, Vector2.Zero, 0f,1f);
     static TextButton saveButton = new("Save", 0, 0, 100, 50, Color.White, Color.Blue, true, true, false);
     static TextButton tileButton = new($"Tile ID: {currentTileID}", 105,0,150,50, Color.White, Color.Blue, true, false, true);
+    static IconButton paintModeButton = new IconButton(260, 0, 50, 50, Color.Blue, true, true, false,paintBrushTexture);
 
     
     [STAThread]
@@ -36,17 +40,18 @@ class Program
         saveButton.Click += SaveClicked;
         tileButton.ScrollUp += IncrementTileID;
         tileButton.ScrollDown += DecrementTileID;
+        paintModeButton.Click += ChangeBrushMode;
 
         while (!Raylib.WindowShouldClose())
         {
 
             if (Raylib.IsMouseButtonPressed(MouseButton.Middle))
             {
-                OnMouseDown();
+                movingCamera = true;
             }
             if (Raylib.IsMouseButtonReleased(MouseButton.Middle))
             {
-                OnMouseUp();
+                movingCamera = false;
             }
             if (movingCamera)
             {
@@ -105,6 +110,14 @@ class Program
         currentTileID = Math.Clamp(currentTileID, 0, MAX_TILE_ID);
         tileButton.text = $"Tile ID: {currentTileID}";
     }
+    public static void ChangeBrushMode(object? sender, ClickEventArgs e)
+    {
+        isBrushMode = !isBrushMode;
+        if (isBrushMode)
+            paintModeButton.icon = paintBrushTexture;
+        else
+            paintModeButton.icon = rectangleModeTexture;
+    }
     public static void RenderTiles()
     {
         for (int i = 0; i < currentMapWidth; i++)
@@ -114,13 +127,5 @@ class Program
                 Raylib.DrawRectangleLines(i * tileSize, j * tileSize, tileSize, tileSize, Color.Black);
             }
         }
-    }
-    public static void OnMouseDown()
-    {
-        movingCamera = true;
-    }
-    public static void OnMouseUp()
-    {
-        movingCamera = false;
     }
 }

@@ -208,3 +208,21 @@ public class TextButton : Button
         Raylib.DrawText(text, (int)(centerX - textWidth / 2), (int)(centerY - textHeight / 2), fontSize, textColor);
     }
 }
+public class IconButton : Button
+{
+    public Texture2D icon;
+    public IconButton(int x, int y, int width, int height, Color color, bool rounded, bool highlightOnClick, bool highlightOnScroll, Texture2D icon) :
+        base(x, y, width, height, color, rounded, highlightOnClick, highlightOnScroll)
+    {
+        this.icon = icon;
+    }
+    public override void Draw()
+    {
+        base.Draw();
+        int centerX = (int)(rect.X + rect.Width / 2);
+        int centerY = (int)(rect.Y + rect.Height / 2);
+        int x = centerX - icon.Width / 2;
+        int y = centerY - icon.Height / 2;
+        Raylib.DrawTexture(icon, x, y, Color.White);
+    }
+}
