@@ -1,8 +1,8 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Numerics;
 using System.Windows.Forms;
 using Raylib_cs;
-using static System.Net.Mime.MediaTypeNames;
 using Color = Raylib_cs.Color;
 using Rectangle = Raylib_cs.Rectangle;
 
@@ -15,10 +15,12 @@ class Program
     const int MAX_TILE_ID = 255;
     const int DEFAULT_MAP_WIDTH = 10;
     const int DEFAULT_MAP_HEIGHT = 10;
+    const int MAX_MAP_WIDTH = 255;
+    const int MAX_MAP_HEIGHT = 255;
     const float ZOOM_SCALE = 0.2f;
 
     static int tileSize = 100;
-    static Tile[,] tiles = new Tile[WIDTH, HEIGHT];
+    static Tile[,] tiles = new Tile[MAX_MAP_WIDTH, MAX_MAP_HEIGHT];
     static int currentMapWidth = DEFAULT_MAP_WIDTH;
     static int currentMapHeight = DEFAULT_MAP_HEIGHT;
     static byte currentTileID = 0;
@@ -30,18 +32,25 @@ class Program
     public static Camera2D camera = new(Vector2.Zero, Vector2.Zero, 0f,0.5f);
     static TextButton saveButton = new("Save", 0, 0, 100, 50, Color.White, Color.Blue, true, true, false);
     static TextButton tileButton = new($"Tile ID: {currentTileID}", 105,0,150,50, Color.White, Color.Blue, true, false, true);
-    static IconButton paintModeButton = new IconButton(260, 0, 50, 50, Color.Blue, true, true, false,paintBrushTexture);
+    static IconButton paintModeButton = new(260, 0, 50, 50, Color.Blue, true, true, false,paintBrushTexture);
+    static TextButton widthButton = new($"Map Width: {currentMapWidth}", 315, 0, 175, 50, Color.White, Color.Blue, true, false, true);
+    static TextButton heightButton = new($"Map Height: {currentMapHeight}", 495, 0, 175, 50, Color.White, Color.Blue, true, false, true);
 
     [STAThread]
     public static void Main()
     {
-        Raylib.InitWindow(800, 600, "Editor");
+        Raylib.InitWindow(WIDTH, HEIGHT, "Editor");
         Raylib.SetTargetFPS(60);
-        FillTiles();
+        FillTiles(tiles, MAX_MAP_WIDTH, MAX_MAP_HEIGHT);
+        Console.WriteLine($"{tiles.GetLength(0)} - {tiles.GetLength(1)}");
         saveButton.Click += SaveClicked;
         tileButton.ScrollUp += IncrementTileID;
         tileButton.ScrollDown += DecrementTileID;
         paintModeButton.Click += ChangeBrushMode;
+        widthButton.ScrollUp += IncrementMapWidth;
+        widthButton.ScrollDown += DecrementMapWidth;
+        heightButton.ScrollUp += IncrementMapHeight;
+        heightButton.ScrollDown += DecrementMapHeight;
 
         while (!Raylib.WindowShouldClose())
         {
@@ -97,6 +106,64 @@ class Program
         currentTileID = (byte)Math.Clamp((int)currentTileID, 0, MAX_TILE_ID);
         tileButton.text = $"Tile ID: {currentTileID}";
     }
+    public static void IncrementMapWidth(object? sender, ClickEventArgs e)
+    {
+        currentMapWidth++;
+        currentMapWidth = Math.Clamp(currentMapWidth, 1, MAX_MAP_WIDTH);
+        widthButton.text = $"Map Width: {currentMapWidth}";
+        RedoMap();
+    }
+    public static void DecrementMapWidth(object? sender, ClickEventArgs e)
+    {
+        currentMapWidth--;
+        currentMapWidth = Math.Clamp(currentMapWidth, 1, MAX_MAP_WIDTH);
+        widthButton.text = $"Map Width: {currentMapWidth}";
+        RedoMap();
+    }
+    public static void IncrementMapHeight(object? sender, ClickEventArgs e)
+    {
+        currentMapHeight++;
+        currentMapHeight = Math.Clamp(currentMapHeight, 1, MAX_MAP_HEIGHT);
+        heightButton.text = $"Map Height: {currentMapHeight}";
+        RedoMap();
+    }
+    public static void DecrementMapHeight(object? sender, ClickEventArgs e)
+    {
+        currentMapHeight--;
+        currentMapHeight = Math.Clamp(currentMapHeight, 1, MAX_MAP_HEIGHT);
+        heightButton.text = $"Map Height: {currentMapHeight}";
+        RedoMap();
+    }
+    public static void RedoMap()
+    {
+        Tile[,] newTiles = new Tile[currentMapWidth,currentMapHeight];
+        FillTiles(newTiles, currentMapWidth, currentMapHeight);
+        for (int i = 0; i < currentMapWidth; i++)
+        {
+            //if (i >= currentMapWidth)
+            //    continue;
+            for (int j = 0; j < currentMapHeight; j++)
+            {
+                //if (j >= currentMapHeight)
+                //    continue;
+                newTiles[i,j] = tiles[i,j];
+            }
+        }
+        //tiles = new Tile[currentMapWidth, currentMapHeight];
+        FillTiles(tiles, currentMapWidth, currentMapHeight);
+        Console.WriteLine($"{tiles.GetLength(0)} - {tiles.GetLength(1)}");
+        for (int i = 0; i < currentMapWidth; i++)
+        {
+            //if (i >= currentMapWidth)
+            //    continue;
+            for (int j = 0; j < currentMapHeight; j++)
+            {
+                //if (j >= currentMapHeight)
+                //    continue;
+                tiles[i, j] = newTiles[i, j];
+            }
+        }
+    }
     public static void ChangeBrushMode(object? sender, ClickEventArgs e)
     {
         isBrushMode = !isBrushMode;
@@ -141,13 +208,13 @@ class Program
         float scale = ZOOM_SCALE * Raylib.GetMouseWheelMoveV().Y;
         camera.Zoom = (float)Math.Clamp(Math.Exp(Math.Log(camera.Zoom) + scale), 0.125f, 64.0f);
     }
-    public static void FillTiles()
+    public static void FillTiles(Tile[,] map, int width, int height)
     {
-        for (int i = 0; i < currentMapWidth; i++)
+        for (int i = 0; i < width; i++)
         {
-            for (int j = 0; j < currentMapHeight; j++)
+            for (int j = 0; j < height; j++)
             {
-                tiles[i, j] = new Tile(new Rectangle(i * tileSize, j * tileSize, tileSize, tileSize), 0);
+                map[i, j] = new Tile(new Rectangle(i * tileSize, j * tileSize, tileSize, tileSize), 0);
             }
         }
     }
