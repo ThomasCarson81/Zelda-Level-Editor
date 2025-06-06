@@ -9,8 +9,7 @@ namespace Editor;
 
 class Program
 {
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
+    const int tileSize = 100;
     const int MAX_TILE_ID = 255;
     const int DEFAULT_MAP_WIDTH = 10;
     const int DEFAULT_MAP_HEIGHT = 10;
@@ -18,7 +17,8 @@ class Program
     const int MAX_MAP_HEIGHT = 255;
     const float ZOOM_SCALE = 0.2f;
 
-    static int tileSize = 100;
+    static int screenWidth = 800;
+    static int screenHeight= 600;
     static int currentMapWidth = DEFAULT_MAP_WIDTH;
     static int currentMapHeight = DEFAULT_MAP_HEIGHT;
     static Tile[,] tiles = new Tile[currentMapWidth, currentMapHeight];
@@ -26,22 +26,22 @@ class Program
     static bool movingCamera = false;
     static bool isBrushMode = true;
 
-    public static Texture2D paintBrushTexture = Raylib.LoadTexture("brush50x50.png");
-    public static Texture2D rectangleModeTexture = Raylib.LoadTexture("rectangleMode2.png");
+    public static Texture2D paintBrushTexture;
+    public static Texture2D rectangleModeTexture;
     public static Camera2D camera = new(Vector2.Zero, Vector2.Zero, 0f,0.5f);
-    static TextButton saveButton = new("Save", 0, 0, 100, 50, Color.White, Color.Blue, true, true, false);
-    static TextButton tileButton = new($"Tile ID: {currentTileID}", 105,0,150,50, Color.White, Color.Blue, true, false, true);
-    static IconButton paintModeButton = new(260, 0, 50, 50, Color.Blue, true, true, false,paintBrushTexture);
-    static TextButton widthButton = new($"Map Width: {currentMapWidth}", 315, 0, 175, 50, Color.White, Color.Blue, true, false, true);
-    static TextButton heightButton = new($"Map Height: {currentMapHeight}", 495, 0, 175, 50, Color.White, Color.Blue, true, false, true);
+    static readonly TextButton saveButton = new("Save", 0, 0, 100, 50, Color.White, Color.Blue, true, true, false);
+    static readonly TextButton tileButton = new($"Tile ID: {currentTileID}", 105,0,150,50, Color.White, Color.Blue, true, false, true);
+    static readonly IconButton paintModeButton = new(260, 0, 50, 50, Color.Blue, true, true, false, paintBrushTexture);
+    static readonly TextButton widthButton = new($"Map Width: {currentMapWidth}", 315, 0, 175, 50, Color.White, Color.Blue, true, false, true);
+    static readonly TextButton heightButton = new($"Map Height: {currentMapHeight}", 495, 0, 175, 50, Color.White, Color.Blue, true, false, true);
 
     [STAThread]
     public static void Main()
     {
-        Raylib.InitWindow(WIDTH, HEIGHT, "Editor");
+        Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
+        Raylib.InitWindow(screenWidth, screenHeight, "Editor");
         Raylib.SetTargetFPS(60);
         FillTiles(tiles);
-        Console.WriteLine($"{tiles.GetLength(0)} - {tiles.GetLength(1)}");
         saveButton.Click += SaveClicked;
         tileButton.ScrollUp += IncrementTileID;
         tileButton.ScrollDown += DecrementTileID;
@@ -51,8 +51,17 @@ class Program
         heightButton.ScrollUp += IncrementMapHeight;
         heightButton.ScrollDown += DecrementMapHeight;
 
+        paintBrushTexture = Raylib.LoadTexture("brush50x50.png");
+        rectangleModeTexture = Raylib.LoadTexture("rectangleMode2.png");
+        paintModeButton.icon = paintBrushTexture;
+
         while (!Raylib.WindowShouldClose())
         {
+            if (Raylib.IsWindowResized())
+            {
+                screenWidth = Raylib.GetScreenWidth();
+                screenHeight = Raylib.GetScreenHeight();
+            }
             PanCamera();
             ZoomCamera();
             PaintTiles();
@@ -189,7 +198,7 @@ class Program
         // Zoom increment
         // Uses log scaling to provide consistent zoom speed
         float scale = ZOOM_SCALE * Raylib.GetMouseWheelMoveV().Y;
-        camera.Zoom = (float)Math.Clamp(Math.Exp(Math.Log(camera.Zoom) + scale), 0.125f, 64.0f);
+        camera.Zoom = (float)Math.Clamp(Math.Exp(Math.Log(camera.Zoom) + scale), 0.1f, 64.0f);
     }
     public static void FillTiles(Tile[,] map)
     {
