@@ -30,7 +30,7 @@ class Program
     public static Texture2D rectangleModeTexture;
     public static Camera2D camera = new(Vector2.Zero, Vector2.Zero, 0f,0.5f);
     static readonly TextButton saveButton = new("Save", 0, 0, 100, 50, Color.White, Color.Blue, true, true, false);
-    static readonly TextButton tileButton = new($"Tile ID: {currentTileID}", 105,0,150,50, Color.White, Color.Blue, true, false, true);
+    static readonly TextButton tileButton = new($"Tile ID: {currentTileID}", 105, 0, 150, 50, Color.White, Color.Blue, true, false, true);
     static readonly IconButton paintModeButton = new(260, 0, 50, 50, Color.Blue, true, true, false, paintBrushTexture);
     static readonly TextButton widthButton = new($"Map Width: {currentMapWidth}", 315, 0, 175, 50, Color.White, Color.Blue, true, false, true);
     static readonly TextButton heightButton = new($"Map Height: {currentMapHeight}", 495, 0, 175, 50, Color.White, Color.Blue, true, false, true);
@@ -41,19 +41,10 @@ class Program
         Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
         Raylib.InitWindow(screenWidth, screenHeight, "Editor");
         Raylib.SetTargetFPS(60);
-        FillTiles(tiles);
-        saveButton.Click += SaveClicked;
-        tileButton.ScrollUp += IncrementTileID;
-        tileButton.ScrollDown += DecrementTileID;
-        paintModeButton.Click += ChangeBrushMode;
-        widthButton.ScrollUp += IncrementMapWidth;
-        widthButton.ScrollDown += DecrementMapWidth;
-        heightButton.ScrollUp += IncrementMapHeight;
-        heightButton.ScrollDown += DecrementMapHeight;
 
-        paintBrushTexture = Raylib.LoadTexture("brush50x50.png");
-        rectangleModeTexture = Raylib.LoadTexture("rectangleMode2.png");
-        paintModeButton.icon = paintBrushTexture;
+        LoadTextures();
+        InitUI();
+        FillTiles(tiles);
 
         while (!Raylib.WindowShouldClose())
         {
@@ -82,6 +73,23 @@ class Program
             Raylib.EndDrawing();
         }
         Raylib.CloseWindow();
+    }
+    public static void LoadTextures()
+    {
+        paintBrushTexture = Raylib.LoadTexture("brush50x50.png");
+        rectangleModeTexture = Raylib.LoadTexture("rectangleMode2.png");
+    }
+    public static void InitUI()
+    {
+        paintModeButton.icon = paintBrushTexture;
+        saveButton.Click += SaveClicked;
+        tileButton.ScrollUp += IncrementTileID;
+        tileButton.ScrollDown += DecrementTileID;
+        paintModeButton.Click += ChangeBrushMode;
+        widthButton.ScrollUp += IncrementMapWidth;
+        widthButton.ScrollDown += DecrementMapWidth;
+        heightButton.ScrollUp += IncrementMapHeight;
+        heightButton.ScrollDown += DecrementMapHeight;
     }
     public static void SaveClicked(object? sender, ClickEventArgs e)
     {
