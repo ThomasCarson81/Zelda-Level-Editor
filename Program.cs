@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Numerics;
 using System.Windows.Forms;
 using Raylib_cs;
@@ -20,9 +19,9 @@ class Program
     const float ZOOM_SCALE = 0.2f;
 
     static int tileSize = 100;
-    static Tile[,] tiles = new Tile[MAX_MAP_WIDTH, MAX_MAP_HEIGHT];
     static int currentMapWidth = DEFAULT_MAP_WIDTH;
     static int currentMapHeight = DEFAULT_MAP_HEIGHT;
+    static Tile[,] tiles = new Tile[currentMapWidth, currentMapHeight];
     static byte currentTileID = 0;
     static bool movingCamera = false;
     static bool isBrushMode = true;
@@ -41,7 +40,7 @@ class Program
     {
         Raylib.InitWindow(WIDTH, HEIGHT, "Editor");
         Raylib.SetTargetFPS(60);
-        FillTiles(tiles, MAX_MAP_WIDTH, MAX_MAP_HEIGHT);
+        FillTiles(tiles);
         Console.WriteLine($"{tiles.GetLength(0)} - {tiles.GetLength(1)}");
         saveButton.Click += SaveClicked;
         tileButton.ScrollUp += IncrementTileID;
@@ -111,58 +110,42 @@ class Program
         currentMapWidth++;
         currentMapWidth = Math.Clamp(currentMapWidth, 1, MAX_MAP_WIDTH);
         widthButton.text = $"Map Width: {currentMapWidth}";
-        RedoMap();
+        tiles = RedoMap();
     }
     public static void DecrementMapWidth(object? sender, ClickEventArgs e)
     {
         currentMapWidth--;
         currentMapWidth = Math.Clamp(currentMapWidth, 1, MAX_MAP_WIDTH);
         widthButton.text = $"Map Width: {currentMapWidth}";
-        RedoMap();
+        tiles = RedoMap();
     }
     public static void IncrementMapHeight(object? sender, ClickEventArgs e)
     {
         currentMapHeight++;
         currentMapHeight = Math.Clamp(currentMapHeight, 1, MAX_MAP_HEIGHT);
         heightButton.text = $"Map Height: {currentMapHeight}";
-        RedoMap();
+        tiles = RedoMap();
     }
     public static void DecrementMapHeight(object? sender, ClickEventArgs e)
     {
         currentMapHeight--;
         currentMapHeight = Math.Clamp(currentMapHeight, 1, MAX_MAP_HEIGHT);
         heightButton.text = $"Map Height: {currentMapHeight}";
-        RedoMap();
+        tiles = RedoMap();
     }
-    public static void RedoMap()
+    public static Tile[,] RedoMap()
     {
         Tile[,] newTiles = new Tile[currentMapWidth,currentMapHeight];
-        FillTiles(newTiles, currentMapWidth, currentMapHeight);
+        FillTiles(newTiles);
         for (int i = 0; i < currentMapWidth; i++)
         {
-            //if (i >= currentMapWidth)
-            //    continue;
             for (int j = 0; j < currentMapHeight; j++)
             {
-                //if (j >= currentMapHeight)
-                //    continue;
-                newTiles[i,j] = tiles[i,j];
+                if (i < tiles.GetLength(0) && j < tiles.GetLength(1))
+                    newTiles[i,j] = tiles[i,j];
             }
         }
-        //tiles = new Tile[currentMapWidth, currentMapHeight];
-        FillTiles(tiles, currentMapWidth, currentMapHeight);
-        Console.WriteLine($"{tiles.GetLength(0)} - {tiles.GetLength(1)}");
-        for (int i = 0; i < currentMapWidth; i++)
-        {
-            //if (i >= currentMapWidth)
-            //    continue;
-            for (int j = 0; j < currentMapHeight; j++)
-            {
-                //if (j >= currentMapHeight)
-                //    continue;
-                tiles[i, j] = newTiles[i, j];
-            }
-        }
+        return newTiles;
     }
     public static void ChangeBrushMode(object? sender, ClickEventArgs e)
     {
@@ -208,11 +191,11 @@ class Program
         float scale = ZOOM_SCALE * Raylib.GetMouseWheelMoveV().Y;
         camera.Zoom = (float)Math.Clamp(Math.Exp(Math.Log(camera.Zoom) + scale), 0.125f, 64.0f);
     }
-    public static void FillTiles(Tile[,] map, int width, int height)
+    public static void FillTiles(Tile[,] map)
     {
-        for (int i = 0; i < width; i++)
+        for (int i = 0; i < currentMapWidth; i++)
         {
-            for (int j = 0; j < height; j++)
+            for (int j = 0; j < currentMapHeight; j++)
             {
                 map[i, j] = new Tile(new Rectangle(i * tileSize, j * tileSize, tileSize, tileSize), 0);
             }
