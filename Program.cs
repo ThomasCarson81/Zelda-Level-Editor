@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Windows.Forms;
 using Raylib_cs;
+using static System.Net.Mime.MediaTypeNames;
 using Color = Raylib_cs.Color;
 using Rectangle = Raylib_cs.Rectangle;
 
@@ -12,7 +13,6 @@ class Program
     const int WIDTH = 800;
     const int HEIGHT = 600;
     const int MAX_TILE_ID = 255;
-    const int MIN_TILE_SIZE = 1;
     const int DEFAULT_MAP_WIDTH = 10;
     const int DEFAULT_MAP_HEIGHT = 10;
     const float ZOOM_SCALE = 0.2f;
@@ -21,7 +21,7 @@ class Program
     static Tile[,] tiles = new Tile[WIDTH, HEIGHT];
     static int currentMapWidth = DEFAULT_MAP_WIDTH;
     static int currentMapHeight = DEFAULT_MAP_HEIGHT;
-    static int currentTileID = 0;
+    static byte currentTileID = 0;
     static bool movingCamera = false;
     static bool isBrushMode = true;
 
@@ -47,6 +47,7 @@ class Program
         {
             PanCamera();
             ZoomCamera();
+            PaintTiles();
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Color.DarkGray);
             Raylib.BeginMode2D(camera);
@@ -87,13 +88,13 @@ class Program
     public static void IncrementTileID(object? sender, ClickEventArgs e)
     {
         currentTileID++;
-        currentTileID = Math.Clamp(currentTileID, 0, MAX_TILE_ID);
+        currentTileID = (byte)Math.Clamp((int)currentTileID, 0, MAX_TILE_ID);
         tileButton.text = $"Tile ID: {currentTileID}";
     }
     public static void DecrementTileID(object? sender, ClickEventArgs e)
     {
         currentTileID--;
-        currentTileID = Math.Clamp(currentTileID, 0, MAX_TILE_ID);
+        currentTileID = (byte)Math.Clamp((int)currentTileID, 0, MAX_TILE_ID);
         tileButton.text = $"Tile ID: {currentTileID}";
     }
     public static void ChangeBrushMode(object? sender, ClickEventArgs e)
@@ -110,9 +111,15 @@ class Program
         {
             for (int j = 0; j < currentMapHeight; j++)
             {
+                string id = tiles[i, j].id.ToString();
                 Rectangle rect = tiles[i, j].rect;
                 Raylib.DrawRectangleLines((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height, Color.Black);
-                //Raylib.DrawRectangleLines(i * tileSize, j * tileSize, tileSize, tileSize, Color.Black);
+                int fontSize = 24;
+                int centerX = (int)(rect.X + rect.Width / 2);
+                int centerY = (int)(rect.Y + rect.Height / 2);
+                int textWidth = Raylib.MeasureText(id, fontSize);
+                int textHeight = fontSize;
+                Raylib.DrawText(id, centerX - textWidth / 2, centerY - textHeight / 2, fontSize, Color.White);
             }
         }
     }
@@ -157,6 +164,20 @@ class Program
         if (movingCamera)
         {
             camera.Target -= Raylib.GetMouseDelta() / camera.Zoom;
+        }
+    }
+    public static void PaintTiles()
+    {
+        if (!isBrushMode || !Raylib.IsMouseButtonDown(MouseButton.Left)) return;
+
+        Vector2 mouseWorldPos = Raylib.GetScreenToWorld2D(Raylib.GetMousePosition(), camera);
+        for (int i = 0; i < currentMapWidth; i++)
+        {
+            for (int j = 0; j < currentMapHeight; j++)
+            {
+                if (Raylib.CheckCollisionPointRec(mouseWorldPos, tiles[i, j].rect))
+                    tiles[i, j].id = currentTileID;
+            }
         }
     }
 }
