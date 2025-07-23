@@ -28,12 +28,15 @@ class Program
 
     public static Texture2D paintBrushTexture;
     public static Texture2D rectangleModeTexture;
+    public static Texture2D grass;
     public static Camera2D camera = new(Vector2.Zero, Vector2.Zero, 0f,0.5f);
     static readonly TextButton saveButton = new("Save", 0, 0, 100, 50, Color.White, Color.Blue, true, true, false);
     static readonly TextButton tileButton = new($"Tile ID: {currentTileID}", 105, 0, 150, 50, Color.White, Color.Blue, true, false, true);
     static readonly IconButton paintModeButton = new(260, 0, 50, 50, Color.Blue, true, true, false, paintBrushTexture);
     static readonly TextButton widthButton = new($"Map Width: {currentMapWidth}", 315, 0, 175, 50, Color.White, Color.Blue, true, false, true);
     static readonly TextButton heightButton = new($"Map Height: {currentMapHeight}", 495, 0, 175, 50, Color.White, Color.Blue, true, false, true);
+
+    static Dictionary<int, Texture2D> validTiles = new Dictionary<int, Texture2D>();
 
     [STAThread]
     public static void Main()
@@ -78,6 +81,8 @@ class Program
     {
         paintBrushTexture = Raylib.LoadTexture("brush50x50.png");
         rectangleModeTexture = Raylib.LoadTexture("rectangleMode2.png");
+        grass = Raylib.LoadTexture("grass.png");
+        validTiles[1] = grass;
     }
     public static void InitUI()
     {
@@ -186,7 +191,10 @@ class Program
                 int centerY = (int)(rect.Y + rect.Height / 2);
                 int textWidth = Raylib.MeasureText(id, fontSize);
                 int textHeight = fontSize;
-                Raylib.DrawText(id, centerX - textWidth / 2, centerY - textHeight / 2, fontSize, Color.White);
+                if (validTiles.ContainsKey(tiles[i,j].id))
+                    Raylib.DrawTexture(validTiles[tiles[i,j].id],i*tileSize,j*tileSize,Color.White);
+                else
+                    Raylib.DrawText(id, centerX - textWidth / 2, centerY - textHeight / 2, fontSize, Color.White);
             }
         }
     }
